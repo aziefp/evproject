@@ -1,0 +1,38 @@
+# Build output
+/build*/
+/out/
+/.cache/
+/CMakeFiles/
+
+# Qt Creator and CMake user state
+CMakeLists.txt.user*
+*.autosave
+compile_commands.json
+
+# Runtime data and logs
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.log
+/runtime/*
+!/runtime/.gitkeep
+
+# Secrets and machine-local configuration
+/config/local.json
+/config/*.secret.json
+/key.txt
+.env
+.env.*
+!.env.example
+
+# Editor and OS files
+.vscode/
+.idea/
+*~
+.DS_Store
+
+# Coding-agent local instructions and state
+/AGENTS.md
+/.agents/
+/.codex/

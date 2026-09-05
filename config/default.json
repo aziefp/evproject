@@ -1,0 +1,19 @@
+{
+  "server": {
+    "listenAddress": "0.0.0.0",
+    "port": 45454,
+    "databasePath": "runtime/evplatform.db"
+  },
+  "client": {
+    "serverHost": "127.0.0.1",
+    "serverPort": 45454
+  },
+  "charging": {
+    "simulationSpeed": 60,
+    "updateIntervalMs": 1000
+  },
+  "map": {
+    "provider": "tencent",
+    "requestTimeoutMs": 8000
+  }
+}
