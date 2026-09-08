@@ -12,7 +12,7 @@
 
 ## 构建与运行
 
-最简单且透明的方式是运行仓库根目录的 `run-demo.sh`。它会依次执行增量编译、启动本机服务器、再启动用户端；脚本本身可直接查看，收到源码的人安装好依赖后也使用同一入口。完整机制和图形化编译、测试、Release 指导见 [`docs/08-build-test-run.md`](docs/08-build-test-run.md)。
+源码开发时，最简单且透明的方式是运行仓库根目录的 `run-demo.sh`。它会依次执行增量编译、启动本机服务器、再启动用户端。无需编译的 Release 便携版由 `scripts/package-portable.sh` 生成到已忽略的 `便捷运行包/BIT比特充电-Linux-x86_64/`，成品内双击“运行演示.sh”即可。完整机制和图形化编译、测试、发布指导见 [`docs/08-build-test-run.md`](docs/08-build-test-run.md)。
 
 项目固定使用已安装的 Qt 6.11.2 GCC Kit。首次构建：
 
