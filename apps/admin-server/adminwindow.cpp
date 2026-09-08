@@ -444,7 +444,7 @@ void AdminWindow::updateDashboard(const QJsonObject &data)
 
     auto *statusSeries = new QPieSeries;
     statusSeries->setHoleSize(0.38);
-    const QStringList statusColors{"#ff5a00", "#35b66b", "#ff5d52", "#858585"};
+    const QStringList statusColors{"#3b82f6", "#35b66b", "#ff5d52", "#858585"};
     for (int i = 0; i < statusRows.size(); ++i) {
         const auto &entry = statusRows.at(i);
         auto *slice = statusSeries->append(entry.first, entry.second);
