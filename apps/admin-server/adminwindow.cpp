@@ -63,6 +63,9 @@ QTableWidget *makeTable(const QStringList &headers)
     table->setSelectionMode(QAbstractItemView::SingleSelection);
     table->setEditTriggers(QAbstractItemView::NoEditTriggers);
     table->verticalHeader()->setVisible(false);
+    table->verticalHeader()->setMinimumSectionSize(40);
+    table->verticalHeader()->setDefaultSectionSize(44);
+    table->setWordWrap(false);
     table->setAlternatingRowColors(true);
     return table;
 }
@@ -124,6 +127,10 @@ AdminWindow::AdminWindow(QWidget *parent)
         QPushButton:disabled { background:#3a3a3a; color:#858585; }
         QPushButton#danger { background:#b42318; }
         QPushButton#danger:hover { background:#d13a2e; }
+        QWidget#tableActions { background:transparent; }
+        QPushButton#tableAction { min-width:76px; padding:6px 10px; }
+        QPushButton#tableDanger { min-width:76px; padding:6px 10px; background:#b42318; }
+        QPushButton#tableDanger:hover { background:#d13a2e; }
         QTabWidget::pane { border:1px solid #3b3b3b; top:-1px; }
         QTabBar::tab { background:#242424; color:#bdbdbd; padding:11px 22px; border-right:1px solid #3b3b3b; }
         QTabBar::tab:selected { background:#ff5a00; color:white; }
@@ -189,7 +196,7 @@ void AdminWindow::buildMainPage()
     auto *page = new QWidget;
     auto *root = new QVBoxLayout(page);
     auto *top = new QHBoxLayout;
-    auto *title = new QLabel("⚡ 充电运营管理");
+    auto *title = new QLabel("充电运营管理");
     title->setStyleSheet("font-size:21px;font-weight:700;color:#ff5a00;");
     auto *status = new QLabel("服务状态将在登录后显示");
     status->setObjectName("muted");
@@ -273,9 +280,23 @@ void AdminWindow::buildMainPage()
 
     auto *chargersPage = new QWidget;
     auto *chargersLayout = new QVBoxLayout(chargersPage);
+    auto *chargerTools = new QHBoxLayout;
+    auto *chargerFilterLabel = new QLabel("电桩状态：", chargersPage);
+    chargerStatusFilter_ = new QComboBox(chargersPage);
+    chargerStatusFilter_->addItem("全部状态", "");
+    chargerStatusFilter_->addItem("闲置", "idle");
+    chargerStatusFilter_->addItem("已预约", "reserved");
+    chargerStatusFilter_->addItem("充电中", "charging");
+    chargerStatusFilter_->addItem("故障", "fault");
+    chargerStatusFilter_->addItem("重启中", "restarting");
+    chargerStatusFilter_->addItem("离线", "offline");
     auto *chargerHint = new QLabel("空闲/离线电桩可报告故障，故障电桩可远程重启；运行中电桩不允许直接改状态", chargersPage);
     chargerHint->setObjectName("muted");
-    chargersLayout->addWidget(chargerHint);
+    chargerTools->addWidget(chargerFilterLabel);
+    chargerTools->addWidget(chargerStatusFilter_);
+    chargerTools->addWidget(chargerHint);
+    chargerTools->addStretch();
+    chargersLayout->addLayout(chargerTools);
     chargersTable_ = makeTable({"ID", "电桩编号", "所属电站", "类型", "功率", "状态", "累计次数", "累计时长", "操作"});
     chargersLayout->addWidget(chargersTable_);
     tabs_->addTab(chargersPage, "电桩管理");
@@ -331,6 +352,10 @@ void AdminWindow::buildMainPage()
     connect(orderStatusFilter_, &QComboBox::currentIndexChanged, this, [this] {
         if (loggedIn_)
             sendCommand("orders.list", {{"statusFilter", orderStatusFilter_->currentData().toString()}});
+    });
+    connect(chargerStatusFilter_, &QComboBox::currentIndexChanged, this, [this] {
+        if (loggedIn_)
+            sendCommand("chargers.list", {{"statusFilter", chargerStatusFilter_->currentData().toString()}});
     });
     refreshTimer_ = new QTimer(this);
     refreshTimer_->setInterval(3000);
@@ -390,7 +415,7 @@ void AdminWindow::refreshAll()
         return;
     sendCommand("dashboard.get");
     sendCommand("stations.list");
-    sendCommand("chargers.list");
+    sendCommand("chargers.list", {{"statusFilter", chargerStatusFilter_->currentData().toString()}});
     sendCommand("users.list", {{"phoneFilter", userSearch_->text()}});
     sendCommand("orders.list", {{"statusFilter", orderStatusFilter_->currentData().toString()}});
 }
@@ -536,6 +561,7 @@ void AdminWindow::updateStations(const QJsonObject &data)
         for (int column = 0; column < values.size(); ++column)
             stationsTable_->setItem(row, column, new QTableWidgetItem(values.at(column)));
         auto *detail = new QPushButton("查看详情", stationsTable_);
+        detail->setObjectName("tableAction");
         const qint64 stationId = static_cast<qint64>(item.value("id").toDouble());
         connect(detail, &QPushButton::clicked, this, [this, stationId] {
             sendCommand("station.get", {{"stationId", stationId}});
@@ -546,7 +572,7 @@ void AdminWindow::updateStations(const QJsonObject &data)
     stationsTable_->horizontalHeader()->setStretchLastSection(false);
     stationsTable_->horizontalHeader()->setSectionResizeMode(2, QHeaderView::Stretch);
     stationsTable_->horizontalHeader()->setSectionResizeMode(8, QHeaderView::Fixed);
-    stationsTable_->setColumnWidth(8, 116);
+    stationsTable_->setColumnWidth(8, 124);
 }
 
 void AdminWindow::showStationDetail(const QJsonObject &data)
@@ -600,14 +626,15 @@ void AdminWindow::updateChargers(const QJsonObject &data)
         const qint64 chargerId = static_cast<qint64>(item.value("id").toDouble());
         const QString chargerCode = item.value("code").toString();
         auto *actions = new QWidget(chargersTable_);
-        actions->setStyleSheet("background:transparent;");
+        actions->setObjectName("tableActions");
         auto *actionLayout = new QHBoxLayout(actions);
         actionLayout->setContentsMargins(3, 2, 3, 2);
         actionLayout->setSpacing(5);
         auto *reportFault = new QPushButton("报告故障", actions);
-        reportFault->setObjectName("danger");
+        reportFault->setObjectName("tableDanger");
         reportFault->setEnabled(chargerStatus == "idle" || chargerStatus == "offline");
         auto *restart = new QPushButton("远程重启", actions);
+        restart->setObjectName("tableAction");
         restart->setEnabled(chargerStatus == "fault");
         connect(reportFault, &QPushButton::clicked, this, [this, chargerId, chargerCode] {
             if (QMessageBox::question(this, "报告电桩故障",
@@ -628,7 +655,7 @@ void AdminWindow::updateChargers(const QJsonObject &data)
     chargersTable_->horizontalHeader()->setStretchLastSection(false);
     chargersTable_->horizontalHeader()->setSectionResizeMode(2, QHeaderView::Stretch);
     chargersTable_->horizontalHeader()->setSectionResizeMode(8, QHeaderView::Fixed);
-    chargersTable_->setColumnWidth(8, 224);
+    chargersTable_->setColumnWidth(8, 206);
 }
 
 void AdminWindow::updateUsers(const QJsonObject &data)
@@ -650,8 +677,7 @@ void AdminWindow::updateUsers(const QJsonObject &data)
         }
         const QString userStatus = item.value("status").toString();
         auto *toggle = new QPushButton(userStatus == "frozen" ? "解冻" : "冻结", usersTable_);
-        if (userStatus != "frozen")
-            toggle->setObjectName("danger");
+        toggle->setObjectName(userStatus == "frozen" ? "tableAction" : "tableDanger");
         const qint64 userId = static_cast<qint64>(item.value("id").toDouble());
         connect(toggle, &QPushButton::clicked, this, [this, userId, userStatus] {
             sendCommand("user.setStatus", {{"userId", userId},
@@ -663,7 +689,7 @@ void AdminWindow::updateUsers(const QJsonObject &data)
     usersTable_->horizontalHeader()->setStretchLastSection(false);
     usersTable_->horizontalHeader()->setSectionResizeMode(2, QHeaderView::Stretch);
     usersTable_->horizontalHeader()->setSectionResizeMode(6, QHeaderView::Fixed);
-    usersTable_->setColumnWidth(6, 96);
+    usersTable_->setColumnWidth(6, 108);
 }
 
 void AdminWindow::updateOrders(const QJsonObject &data)
@@ -689,6 +715,7 @@ void AdminWindow::updateOrders(const QJsonObject &data)
         }
         const QString orderStatus = item.value("status").toString();
         auto *settle = new QPushButton("代结算", ordersTable_);
+        settle->setObjectName("tableAction");
         settle->setEnabled(orderStatus == "pending_settlement");
         const qint64 orderId = static_cast<qint64>(item.value("id").toDouble());
         connect(settle, &QPushButton::clicked, this, [this, orderId] {
@@ -700,7 +727,7 @@ void AdminWindow::updateOrders(const QJsonObject &data)
     ordersTable_->horizontalHeader()->setStretchLastSection(false);
     ordersTable_->horizontalHeader()->setSectionResizeMode(2, QHeaderView::Stretch);
     ordersTable_->horizontalHeader()->setSectionResizeMode(9, QHeaderView::Fixed);
-    ordersTable_->setColumnWidth(9, 104);
+    ordersTable_->setColumnWidth(9, 112);
 }
 
 void AdminWindow::addStation()

@@ -412,7 +412,7 @@ void ServerWorker::handleAdminCommand(quint64 requestId, const QString &action, 
     else if (action == "station.get")
         result = database_->stationDetail(static_cast<qint64>(data.value("stationId").toDouble()));
     else if (action == "chargers.list")
-        result = database_->adminChargers();
+        result = database_->adminChargers(data.value("statusFilter").toString());
     else if (action == "users.list")
         result = database_->adminUsers(data.value("phoneFilter").toString());
     else if (action == "orders.list")

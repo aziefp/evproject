@@ -167,6 +167,13 @@ void DatabaseTest::completeUserAndAdminFlow()
         QCOMPARE(value.toObject().value("status").toString(), QString("settled"));
     QVERIFY(!database.adminOrders("unknown").ok);
 
+    const DbResult idleChargers = database.adminChargers("idle");
+    QVERIFY(idleChargers.ok);
+    QVERIFY(!idleChargers.data.value("chargers").toArray().isEmpty());
+    for (const QJsonValue &value : idleChargers.data.value("chargers").toArray())
+        QCOMPARE(value.toObject().value("status").toString(), QString("idle"));
+    QVERIFY(!database.adminChargers("unknown").ok);
+
     QVERIFY(database.adminReportChargerFault(chargerId).ok);
     QVERIFY(!database.adminReportChargerFault(chargerId).ok);
     QString faultStatus;

@@ -41,7 +41,7 @@ public:
     DbResult adminLogin(const QString &username, const QString &password);
     DbResult adminDashboard();
     DbResult adminStations();
-    DbResult adminChargers();
+    DbResult adminChargers(const QString &statusFilter = {});
     DbResult adminUsers(const QString &phoneFilter);
     DbResult adminOrders(const QString &statusFilter = {});
     DbResult adminAddStation(const QJsonObject &data);

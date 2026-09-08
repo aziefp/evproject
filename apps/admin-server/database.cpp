@@ -939,11 +939,23 @@ DbResult Database::adminStations()
     return stationList(22.543687, 114.059625);
 }
 
-DbResult Database::adminChargers()
+DbResult Database::adminChargers(const QString &statusFilter)
 {
+    static const QSet<QString> validStatuses{
+        "idle", "reserved", "charging", "fault", "restarting", "offline"};
+    if (!statusFilter.isEmpty() && !validStatuses.contains(statusFilter))
+        return failure("REQUEST_INVALID", "电桩状态筛选值无效");
+
     QSqlQuery query(db_);
-    if (!query.exec("SELECT c.id,c.code,s.name,c.type,c.power_watts,c.status,c.total_sessions,c.total_duration_seconds "
-                    "FROM chargers c JOIN stations s ON s.id=c.station_id ORDER BY c.code"))
+    QString sql = "SELECT c.id,c.code,s.name,c.type,c.power_watts,c.status,c.total_sessions,c.total_duration_seconds "
+                  "FROM chargers c JOIN stations s ON s.id=c.station_id";
+    if (!statusFilter.isEmpty())
+        sql += " WHERE c.status=?";
+    sql += " ORDER BY c.code";
+    query.prepare(sql);
+    if (!statusFilter.isEmpty())
+        query.addBindValue(statusFilter);
+    if (!query.exec())
         return failure("DATABASE_UNAVAILABLE", query.lastError().text());
     QJsonArray array;
     while (query.next()) {
