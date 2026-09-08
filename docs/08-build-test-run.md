@@ -9,10 +9,10 @@
 执行顺序固定且很短：
 
 1. 调用 `scripts/build.sh`；若尚未配置则继续调用 `scripts/configure.sh`，已有构建只做快速增量编译。
-2. 启动 `ev-admin-server`，监听 `0.0.0.0:45454`，数据库明确指定为仓库内的 `runtime/evplatform.db`。
-3. 等待一秒，确认服务器仍在运行。
-4. 启动 `ev-user-client`，连接 `127.0.0.1:45454`。
-5. 用户端关闭后，脚本结束本次服务器进程；没有常驻后台服务。
+2. 无参数时启动 `ev-admin-server`，监听 `0.0.0.0:45454`，数据库为 `runtime/evplatform.db`。
+3. 等待一秒，确认服务器仍在运行，再启动 `ev-user-client` 连接 `127.0.0.1:45454`。
+4. 用户端关闭后，脚本结束本次服务器进程；没有常驻后台服务。
+5. `./run-demo.sh server` 只启动管理服务器；`./run-demo.sh client <服务器IPv4>` 只启动用户端，用于两机快速演示。
 
 在文件管理器中可右键 `run-demo.sh`，选择“作为程序运行”；若当前文件管理器只会打开脚本，则在项目目录打开终端，执行：
 
@@ -128,11 +128,11 @@ ev-user-client:
 终端备用启动方式（均从各自项目根目录执行）：
 
 ```bash
-# 电脑 B
-./build-debug/apps/admin-server/ev-admin-server --listen-address 0.0.0.0 --port 45454 --db runtime/evplatform.db --key-file key.txt --simulation-speed 60
+# 电脑 B：增量编译后启动管理服务器
+./run-demo.sh server
 
-# 电脑 A，必须替换地址
-./build-debug/apps/user-client/ev-user-client --host <B的IPv4> --port 45454 --key-file key.txt
+# 电脑 A：增量编译后连接 B，必须替换地址
+./run-demo.sh client <B的IPv4>
 ```
 
 2026-09-08 已在开发机上通过非回环局域网 IPv4 完成真实 TCP 联调，覆盖登录、充值幂等、地址解析、找站、预约、充电计量、停止、结算、历史和多客户端推送。这证明代码的非本机监听和连接路径可用；但真正的两台物理电脑仍需按本节做一次现场验收，因为防火墙、路由器隔离和目标机 Qt 运行环境不是程序能单独保证的条件。
