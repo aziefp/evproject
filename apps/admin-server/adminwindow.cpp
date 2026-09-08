@@ -84,8 +84,8 @@ QWidget *metricCard(const QString &title, QLabel **value)
 void prepareChart(QChart *chart)
 {
     chart->setTheme(QChart::ChartThemeDark);
-    chart->setBackgroundBrush(QColor("#0c1a2c"));
-    chart->setBackgroundRoundness(8);
+    chart->setBackgroundBrush(QColor("#232323"));
+    chart->setBackgroundRoundness(0);
     chart->setMargins(QMargins(8, 8, 8, 8));
 }
 
@@ -111,25 +111,36 @@ AdminWindow::AdminWindow(QWidget *parent)
     stack_->setCurrentIndex(0);
 
     setStyleSheet(R"(
-        QMainWindow, QWidget { background:#081322; color:#d8e7f5; font-size:14px; }
-        QLineEdit, QSpinBox, QDoubleSpinBox { background:#101f33; border:1px solid #25425f; border-radius:5px; padding:8px; }
-        QPushButton { background:#079bd3; color:white; border:0; border-radius:5px; padding:8px 16px; font-weight:600; }
-        QPushButton:hover { background:#10b8e8; }
-        QPushButton:disabled { background:#24364a; color:#6e8296; }
-        QPushButton#danger { background:#9b2f3f; }
-        QTabWidget::pane { border:1px solid #1d3550; }
-        QTabBar::tab { background:#0c1a2c; padding:10px 20px; }
-        QTabBar::tab:selected { background:#124263; color:#38d7ff; }
-        QTableWidget { background:#0c1a2c; alternate-background-color:#11243a; gridline-color:#203b58; }
-        QListWidget { background:#0c1a2c; border:1px solid #1d3550; border-radius:8px; padding:4px; }
-        QListWidget::item { background:#11243a; border-radius:5px; margin:3px; padding:8px; }
-        QHeaderView::section { background:#132b45; color:#bcd7ec; padding:7px; border:0; }
-        QFrame#metricCard { background:#10223a; border:1px solid #1d3d5f; border-radius:8px; }
+        QMainWindow, QDialog, QWidget { background:#181818; color:#f2f2f2; font-size:14px; }
+        QLineEdit, QComboBox, QSpinBox, QDoubleSpinBox {
+            background:#292929; color:#f2f2f2; border:1px solid #555555;
+            border-radius:2px; padding:8px; selection-background-color:#ff5a00;
+        }
+        QLineEdit:focus, QComboBox:focus, QSpinBox:focus, QDoubleSpinBox:focus { border:1px solid #ff5a00; }
+        QComboBox QAbstractItemView { background:#292929; color:#f2f2f2; selection-background-color:#ff5a00; }
+        QPushButton { background:#ff5a00; color:white; border:0; border-radius:2px; padding:8px 16px; font-weight:700; }
+        QPushButton:hover { background:#ff7426; }
+        QPushButton:pressed { background:#d94c00; }
+        QPushButton:disabled { background:#3a3a3a; color:#858585; }
+        QPushButton#danger { background:#b42318; }
+        QPushButton#danger:hover { background:#d13a2e; }
+        QTabWidget::pane { border:1px solid #3b3b3b; top:-1px; }
+        QTabBar::tab { background:#242424; color:#bdbdbd; padding:11px 22px; border-right:1px solid #3b3b3b; }
+        QTabBar::tab:selected { background:#ff5a00; color:white; }
+        QTabBar::tab:hover:!selected { background:#333333; color:#ffffff; }
+        QTableWidget { background:#202020; alternate-background-color:#272727; gridline-color:#3b3b3b; border:1px solid #3b3b3b; }
+        QTableWidget::item { padding:5px; }
+        QTableWidget::item:selected { background:#9f3b08; color:white; }
+        QListWidget { background:#202020; border:1px solid #3b3b3b; border-radius:0; padding:4px; }
+        QListWidget::item { background:#292929; border-radius:0; margin:3px; padding:8px; }
+        QListWidget::item:selected { background:#9f3b08; color:white; }
+        QHeaderView::section { background:#303030; color:#f0f0f0; padding:8px; border:0; border-right:1px solid #474747; }
+        QFrame#metricCard { background:#242424; border:1px solid #444444; border-radius:2px; }
         QFrame#metricCard QLabel { background:transparent; }
-        QFrame#dashboardPanel { background:#0c1a2c; border:1px solid #1d3550; border-radius:8px; }
-        QLabel#metricValue { color:#27d7ff; font-size:24px; font-weight:700; }
-        QLabel#faultTitle { color:#ff5d6c; background:transparent; font-size:17px; font-weight:700; }
-        QLabel#muted { color:#7994ad; }
+        QFrame#dashboardPanel { background:#232323; border:1px solid #444444; border-radius:2px; }
+        QLabel#metricValue { color:#ff6a16; font-size:24px; font-weight:700; }
+        QLabel#faultTitle { color:#ff665c; background:transparent; font-size:17px; font-weight:700; }
+        QLabel#muted { color:#a0a0a0; }
     )");
 }
 
@@ -144,7 +155,7 @@ void AdminWindow::buildLoginPage()
     auto *form = new QVBoxLayout(panel);
     auto *title = new QLabel("充电桩运营管理后台");
     title->setAlignment(Qt::AlignCenter);
-    title->setStyleSheet("font-size:26px;font-weight:700;color:#31d7ff;padding:18px;");
+    title->setStyleSheet("font-size:26px;font-weight:700;color:#ff5a00;padding:18px;");
     usernameEdit_ = new QLineEdit("admin");
     usernameEdit_->setPlaceholderText("管理员账号");
     passwordEdit_ = new QLineEdit("123456");
@@ -179,7 +190,7 @@ void AdminWindow::buildMainPage()
     auto *root = new QVBoxLayout(page);
     auto *top = new QHBoxLayout;
     auto *title = new QLabel("⚡ 充电运营管理");
-    title->setStyleSheet("font-size:21px;font-weight:700;color:#31d7ff;");
+    title->setStyleSheet("font-size:21px;font-weight:700;color:#ff5a00;");
     auto *status = new QLabel("服务状态将在登录后显示");
     status->setObjectName("muted");
     serverStatus_ = status;
@@ -262,7 +273,7 @@ void AdminWindow::buildMainPage()
 
     auto *chargersPage = new QWidget;
     auto *chargersLayout = new QVBoxLayout(chargersPage);
-    auto *chargerHint = new QLabel("故障电桩可在行末执行远程重启", chargersPage);
+    auto *chargerHint = new QLabel("空闲/离线电桩可报告故障，故障电桩可远程重启；运行中电桩不允许直接改状态", chargersPage);
     chargerHint->setObjectName("muted");
     chargersLayout->addWidget(chargerHint);
     chargersTable_ = makeTable({"ID", "电桩编号", "所属电站", "类型", "功率", "状态", "累计次数", "累计时长", "操作"});
@@ -271,9 +282,22 @@ void AdminWindow::buildMainPage()
 
     auto *ordersPage = new QWidget;
     auto *ordersLayout = new QVBoxLayout(ordersPage);
+    auto *orderTools = new QHBoxLayout;
+    auto *orderFilterLabel = new QLabel("订单状态：", ordersPage);
+    orderStatusFilter_ = new QComboBox(ordersPage);
+    orderStatusFilter_->addItem("全部状态", "");
+    orderStatusFilter_->addItem("已预约", "reserved");
+    orderStatusFilter_->addItem("充电中", "charging");
+    orderStatusFilter_->addItem("待结算", "pending_settlement");
+    orderStatusFilter_->addItem("已结算", "settled");
+    orderStatusFilter_->addItem("已取消", "cancelled");
     auto *orderHint = new QLabel("待结算订单可在行末代结算", ordersPage);
     orderHint->setObjectName("muted");
-    ordersLayout->addWidget(orderHint);
+    orderTools->addWidget(orderFilterLabel);
+    orderTools->addWidget(orderStatusFilter_);
+    orderTools->addWidget(orderHint);
+    orderTools->addStretch();
+    ordersLayout->addLayout(orderTools);
     ordersTable_ = makeTable({"ID", "订单号", "电站", "电桩", "状态", "电量", "金额", "开始时间", "结束时间", "操作"});
     ordersLayout->addWidget(ordersTable_);
     tabs_->addTab(ordersPage, "订单管理");
@@ -303,6 +327,10 @@ void AdminWindow::buildMainPage()
     connect(trendRange_, &QComboBox::currentIndexChanged, this, [this] {
         if (!lastDashboard_.isEmpty())
             updateDashboard(lastDashboard_);
+    });
+    connect(orderStatusFilter_, &QComboBox::currentIndexChanged, this, [this] {
+        if (loggedIn_)
+            sendCommand("orders.list", {{"statusFilter", orderStatusFilter_->currentData().toString()}});
     });
     refreshTimer_ = new QTimer(this);
     refreshTimer_->setInterval(3000);
@@ -364,7 +392,7 @@ void AdminWindow::refreshAll()
     sendCommand("stations.list");
     sendCommand("chargers.list");
     sendCommand("users.list", {{"phoneFilter", userSearch_->text()}});
-    sendCommand("orders.list");
+    sendCommand("orders.list", {{"statusFilter", orderStatusFilter_->currentData().toString()}});
 }
 
 void AdminWindow::updateDashboard(const QJsonObject &data)
@@ -391,7 +419,7 @@ void AdminWindow::updateDashboard(const QJsonObject &data)
 
     auto *statusSeries = new QPieSeries;
     statusSeries->setHoleSize(0.38);
-    const QStringList statusColors{"#24d9ff", "#27c987", "#ff5d6c", "#7d8ca3"};
+    const QStringList statusColors{"#ff5a00", "#35b66b", "#ff5d52", "#858585"};
     for (int i = 0; i < statusRows.size(); ++i) {
         const auto &entry = statusRows.at(i);
         auto *slice = statusSeries->append(entry.first, entry.second);
@@ -429,7 +457,7 @@ void AdminWindow::updateDashboard(const QJsonObject &data)
         maxValue = qMax(maxValue, value);
     }
     series->setName("营收（元）");
-    QPen trendPen(QColor("#24d9ff"));
+    QPen trendPen(QColor("#ff6a16"));
     trendPen.setWidthF(3.2);
     series->setPen(trendPen);
     auto *chart = new QChart;
@@ -450,7 +478,7 @@ void AdminWindow::updateDashboard(const QJsonObject &data)
     replaceChart(revenueChart_, chart);
 
     auto *revenueSet = new QBarSet("营收（元）");
-    revenueSet->setColor(QColor("#27c987"));
+    revenueSet->setColor(QColor("#ff7a2f"));
     QStringList stationNames;
     qreal maxStationRevenue = 1;
     const QJsonArray ranking = data.value("stationRevenue").toArray();
@@ -569,21 +597,38 @@ void AdminWindow::updateChargers(const QJsonObject &data)
             chargersTable_->setItem(row, column, cell);
         }
         const QString chargerStatus = item.value("status").toString();
-        auto *restart = new QPushButton("远程重启", chargersTable_);
-        restart->setEnabled(chargerStatus == "fault");
-        if (chargerStatus == "fault")
-            restart->setObjectName("danger");
         const qint64 chargerId = static_cast<qint64>(item.value("id").toDouble());
+        const QString chargerCode = item.value("code").toString();
+        auto *actions = new QWidget(chargersTable_);
+        actions->setStyleSheet("background:transparent;");
+        auto *actionLayout = new QHBoxLayout(actions);
+        actionLayout->setContentsMargins(3, 2, 3, 2);
+        actionLayout->setSpacing(5);
+        auto *reportFault = new QPushButton("报告故障", actions);
+        reportFault->setObjectName("danger");
+        reportFault->setEnabled(chargerStatus == "idle" || chargerStatus == "offline");
+        auto *restart = new QPushButton("远程重启", actions);
+        restart->setEnabled(chargerStatus == "fault");
+        connect(reportFault, &QPushButton::clicked, this, [this, chargerId, chargerCode] {
+            if (QMessageBox::question(this, "报告电桩故障",
+                                      QStringLiteral("确认将电桩 %1 设为故障状态？").arg(chargerCode),
+                                      QMessageBox::Yes | QMessageBox::No, QMessageBox::No)
+                == QMessageBox::Yes) {
+                sendCommand("charger.reportFault", {{"chargerId", chargerId}});
+            }
+        });
         connect(restart, &QPushButton::clicked, this, [this, chargerId] {
             sendCommand("charger.restart", {{"chargerId", chargerId}});
         });
-        chargersTable_->setCellWidget(row, 8, restart);
+        actionLayout->addWidget(reportFault);
+        actionLayout->addWidget(restart);
+        chargersTable_->setCellWidget(row, 8, actions);
     }
     chargersTable_->resizeColumnsToContents();
     chargersTable_->horizontalHeader()->setStretchLastSection(false);
     chargersTable_->horizontalHeader()->setSectionResizeMode(2, QHeaderView::Stretch);
     chargersTable_->horizontalHeader()->setSectionResizeMode(8, QHeaderView::Fixed);
-    chargersTable_->setColumnWidth(8, 124);
+    chargersTable_->setColumnWidth(8, 224);
 }
 
 void AdminWindow::updateUsers(const QJsonObject &data)

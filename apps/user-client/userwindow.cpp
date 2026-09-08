@@ -279,6 +279,9 @@ void UserWindow::buildMainPage()
     profileForm->addRow("昵称", nicknameRow);
     profileForm->addRow("账户余额", balanceLabel_);
     profileForm->addRow("充值金额（元）", rechargeRow);
+    auto *logoutButton = new QPushButton("退出登录", profileBox);
+    logoutButton->setObjectName("secondary");
+    profileForm->addRow("", logoutButton);
     profileLayout->addWidget(profileBox);
     auto *historyBox = new QGroupBox("充电订单记录", profilePage);
     auto *historyLayout = new QVBoxLayout(historyBox);
@@ -293,6 +296,7 @@ void UserWindow::buildMainPage()
     connect(saveButton, &QPushButton::clicked, this, &UserWindow::saveProfile);
     connect(nicknameEdit_, &QLineEdit::returnPressed, saveButton, &QPushButton::click);
     connect(rechargeButton, &QPushButton::clicked, this, &UserWindow::recharge);
+    connect(logoutButton, &QPushButton::clicked, this, &UserWindow::logout);
     tabs_->addTab(profilePage, "👤 我的");
     connect(tabs_, &QTabWidget::currentChanged, this, [this](int index) {
         if (index == 1 && connection_->isConnected())
@@ -439,10 +443,7 @@ void UserWindow::handleMessage(const QJsonObject &message)
         updateProfile(data.value("profile").toObject());
     } else if (type == "user.statusChanged") {
         if (data.value("status").toString() == "frozen") {
-            pollTimer_->stop();
-            connection_->setSessionToken({});
-            stack_->setCurrentIndex(0);
-            loginStatus_->setText("账号已被管理员冻结，请联系管理员解冻");
+            resetToLogin("账号已被管理员冻结，请联系管理员解冻", false);
             QMessageBox::warning(this, "账号状态", "账号已被管理员冻结，当前会话已退出");
         }
     } else if (type == "order.reserve.result" || type == "order.startCharging.result"
@@ -682,6 +683,46 @@ void UserWindow::recharge()
         return;
     }
     connection_->sendRequest("wallet.recharge", {{"amountCents", qRound64(amount * 100.0)}});
+}
+
+void UserWindow::logout()
+{
+    QString message = "确认退出当前账号？";
+    if (activeOrderId_ > 0)
+        message += "\n\n未完成订单仍会保留在服务器，退出不会停止充电或取消预约。";
+    if (QMessageBox::question(this, "退出登录", message,
+                              QMessageBox::Yes | QMessageBox::No, QMessageBox::No)
+        != QMessageBox::Yes) {
+        return;
+    }
+
+    if (connection_->isConnected())
+        connection_->sendRequest("session.logout");
+    resetToLogin("已退出登录，请输入其他手机号", true);
+}
+
+void UserWindow::resetToLogin(const QString &message, bool clearPhone)
+{
+    pollTimer_->stop();
+    connection_->setSessionToken({});
+    lastPhone_.clear();
+    loginPending_ = false;
+    promptedActiveOrderId_ = 0;
+    suppressNextActivePrompt_ = false;
+    updateActiveOrder(QJsonValue());
+    stationList_->clear();
+    historyList_->clear();
+    avatarBase64_.clear();
+    avatarLabel_->clear();
+    avatarLabel_->setText("暂无头像");
+    phoneLabel_->setText("-");
+    nicknameEdit_->clear();
+    balanceLabel_->setText("¥0.00");
+    if (clearPhone)
+        phoneEdit_->clear();
+    stack_->setCurrentIndex(0);
+    loginStatus_->setText(message);
+    phoneEdit_->setFocus();
 }
 
 void UserWindow::actOnOrder(const QString &action)

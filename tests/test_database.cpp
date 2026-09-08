@@ -66,6 +66,7 @@ void DatabaseTest::completeUserAndAdminFlow()
     const qint64 secondUserId = static_cast<qint64>(secondLogin.data.value("profile").toObject().value("id").toDouble());
     QVERIFY(!database.reserveOrder(secondUserId, chargerId).ok);
     QVERIFY(database.startOrder(userId, orderId).ok);
+    QVERIFY(!database.adminReportChargerFault(chargerId).ok);
     const QJsonArray manualTick = database.tickCharging(60);
     QVERIFY(!manualTick.isEmpty());
     QJsonObject meteredOrder;
@@ -159,28 +160,36 @@ void DatabaseTest::completeUserAndAdminFlow()
     QVERIFY(!dashboard.value("faultChargers").toArray().isEmpty());
     QVERIFY(!database.adminUsers("1390000").data.value("users").toArray().isEmpty());
     QVERIFY(!database.adminOrders().data.value("orders").toArray().isEmpty());
+    const DbResult settledOrders = database.adminOrders("settled");
+    QVERIFY(settledOrders.ok);
+    QVERIFY(!settledOrders.data.value("orders").toArray().isEmpty());
+    for (const QJsonValue &value : settledOrders.data.value("orders").toArray())
+        QCOMPARE(value.toObject().value("status").toString(), QString("settled"));
+    QVERIFY(!database.adminOrders("unknown").ok);
 
-    qint64 faultId = 0;
+    QVERIFY(database.adminReportChargerFault(chargerId).ok);
+    QVERIFY(!database.adminReportChargerFault(chargerId).ok);
+    QString faultStatus;
     for (const QJsonValue &value : database.adminChargers().data.value("chargers").toArray()) {
-        if (value.toObject().value("status").toString() == "fault") {
-            faultId = static_cast<qint64>(value.toObject().value("id").toDouble());
+        if (static_cast<qint64>(value.toObject().value("id").toDouble()) == chargerId) {
+            faultStatus = value.toObject().value("status").toString();
             break;
         }
     }
-    QVERIFY(faultId > 0);
-    QVERIFY(database.adminRestartCharger(faultId).ok);
+    QCOMPARE(faultStatus, QString("fault"));
+    QVERIFY(database.adminRestartCharger(chargerId).ok);
     QString restartStatus;
     for (const QJsonValue &value : database.adminChargers().data.value("chargers").toArray()) {
-        if (static_cast<qint64>(value.toObject().value("id").toDouble()) == faultId) {
+        if (static_cast<qint64>(value.toObject().value("id").toDouble()) == chargerId) {
             restartStatus = value.toObject().value("status").toString();
             break;
         }
     }
     QCOMPARE(restartStatus, QString("restarting"));
-    QVERIFY(database.finishRestart(faultId).ok);
+    QVERIFY(database.finishRestart(chargerId).ok);
     QString finishedStatus;
     for (const QJsonValue &value : database.adminChargers().data.value("chargers").toArray()) {
-        if (static_cast<qint64>(value.toObject().value("id").toDouble()) == faultId) {
+        if (static_cast<qint64>(value.toObject().value("id").toDouble()) == chargerId) {
             finishedStatus = value.toObject().value("status").toString();
             break;
         }

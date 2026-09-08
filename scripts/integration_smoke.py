@@ -119,7 +119,18 @@ def main() -> int:
     assert settled["order"]["status"] == "settled"
     assert any(item["id"] == order_id for item in client.request("order.listMine")["orders"])
     assert client.request("order.getActive")["order"] is None
-    coverage = "login/profile/recharge/stations/reserve/start/simulate/stop/settle/history/push-sync"
+    client.request("session.logout")
+    try:
+        client.request("user.getProfile")
+    except RuntimeError as error:
+        assert "请先登录" in str(error)
+    else:
+        raise AssertionError("logged-out session still accepted")
+    client.token = ""
+    relogin = client.request("session.loginByPhone", {"phone": phone})
+    client.token = relogin["sessionToken"]
+    assert relogin["profile"]["phone"] == phone
+    coverage = "login/profile/recharge/stations/reserve/start/simulate/stop/settle/history/push-sync/logout/relogin"
     if not args.skip_geocode:
         coverage = coverage.replace("recharge/", "recharge/geocode/")
     print("PASS: " + coverage)

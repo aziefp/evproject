@@ -60,6 +60,7 @@ private:
     QChartView *revenueChart_ = nullptr;
     QChartView *stationRevenueChart_ = nullptr;
     QComboBox *trendRange_ = nullptr;
+    QComboBox *orderStatusFilter_ = nullptr;
     QJsonObject lastDashboard_;
 
     QTableWidget *stationsTable_ = nullptr;

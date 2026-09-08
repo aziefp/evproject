@@ -93,15 +93,12 @@ reserved ──start──► charging ──stop/balance limit──► pending
 
 ```text
 idle ──reserve──► reserved ──start──► charging ──settle──► idle
-  │                    │                │
-  └────fault──────────►fault◄───────────┘
-                         │
-                    remote restart
-                         ▼
-                     restarting ──success──► idle
+  │
+  └──report fault──► fault ──remote restart──► restarting ──success──► idle
+offline ──report fault───┘
 ```
 
-演示中的故障桩不能预约。管理端可对故障桩执行 `fault → restarting → idle` 的模拟远程重启；充电中的故障注入不属于第一阶段基础实现。
+演示中的故障桩不能预约。管理端可将 `idle | offline` 电桩报告为 `fault`，并对故障桩执行 `fault → restarting → idle` 的模拟远程重启。为保护订单与电桩状态一致性，`reserved | charging | restarting` 状态拒绝故障上报；充电中的故障注入不属于第一阶段基础实现。
 
 ## 6. 演示数据规模
 

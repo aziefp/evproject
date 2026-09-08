@@ -8,6 +8,7 @@
 #include <QFileInfo>
 #include <QJsonDocument>
 #include <QRandomGenerator>
+#include <QSet>
 #include <QSqlError>
 #include <QSqlQuery>
 #include <QSqlRecord>
@@ -971,10 +972,21 @@ DbResult Database::adminUsers(const QString &phoneFilter)
     return success({{"users", array}});
 }
 
-DbResult Database::adminOrders()
+DbResult Database::adminOrders(const QString &statusFilter)
 {
+    static const QSet<QString> validStatuses{
+        "reserved", "charging", "pending_settlement", "settled", "cancelled"};
+    if (!statusFilter.isEmpty() && !validStatuses.contains(statusFilter))
+        return failure("REQUEST_INVALID", "订单状态筛选值无效");
+
     QSqlQuery query(db_);
-    if (!query.exec("SELECT id FROM orders ORDER BY id DESC LIMIT 100"))
+    if (statusFilter.isEmpty()) {
+        query.prepare("SELECT id FROM orders ORDER BY id DESC LIMIT 100");
+    } else {
+        query.prepare("SELECT id FROM orders WHERE status=? ORDER BY id DESC LIMIT 100");
+        query.addBindValue(statusFilter);
+    }
+    if (!query.exec())
         return failure("DATABASE_UNAVAILABLE", query.lastError().text());
     QJsonArray array;
     while (query.next())
@@ -1031,6 +1043,28 @@ DbResult Database::adminSetUserStatus(qint64 userId, const QString &status)
     query.addBindValue(status); query.addBindValue(nowSeconds()); query.addBindValue(userId);
     if (!query.exec() || query.numRowsAffected() != 1)
         return failure("USER_NOT_FOUND", "用户不存在");
+    return success();
+}
+
+DbResult Database::adminReportChargerFault(qint64 chargerId)
+{
+    QSqlQuery query(db_);
+    query.prepare("UPDATE chargers SET status='fault',updated_at=? "
+                  "WHERE id=? AND status IN ('idle','offline')");
+    query.addBindValue(nowSeconds());
+    query.addBindValue(chargerId);
+    if (!query.exec())
+        return failure("DATABASE_UNAVAILABLE", query.lastError().text());
+    if (query.numRowsAffected() != 1) {
+        QSqlQuery exists(db_);
+        exists.prepare("SELECT status FROM chargers WHERE id=?");
+        exists.addBindValue(chargerId);
+        if (!exists.exec())
+            return failure("DATABASE_UNAVAILABLE", exists.lastError().text());
+        if (!exists.next())
+            return failure("CHARGER_NOT_FOUND", "电桩不存在");
+        return failure("CHARGER_NOT_AVAILABLE", "仅空闲或离线电桩可以报告故障");
+    }
     return success();
 }
 

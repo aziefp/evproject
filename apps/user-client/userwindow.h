@@ -38,6 +38,8 @@ private:
     void chooseAvatar();
     void recharge();
     void actOnOrder(const QString &action);
+    void logout();
+    void resetToLogin(const QString &message, bool clearPhone);
 
     ClientConnection *connection_ = nullptr;
     QStackedWidget *stack_ = nullptr;

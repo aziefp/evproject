@@ -43,9 +43,10 @@ public:
     DbResult adminStations();
     DbResult adminChargers();
     DbResult adminUsers(const QString &phoneFilter);
-    DbResult adminOrders();
+    DbResult adminOrders(const QString &statusFilter = {});
     DbResult adminAddStation(const QJsonObject &data);
     DbResult adminSetUserStatus(qint64 userId, const QString &status);
+    DbResult adminReportChargerFault(qint64 chargerId);
     DbResult adminRestartCharger(qint64 chargerId);
     DbResult finishRestart(qint64 chargerId);
     DbResult adminSettleOrder(qint64 orderId);

@@ -235,6 +235,14 @@ void ServerWorker::dispatch(QTcpSocket *socket, const QJsonObject &request)
     if (!authenticate(socket, request))
         return;
 
+    if (type == "session.logout") {
+        sendResponse(socket, request, ev::makeSuccess(request, "session.logout.result"));
+        clients_[socket].userId = 0;
+        clients_[socket].sessionToken.clear();
+        clients_[socket].responseCache.clear();
+        return;
+    }
+
     const qint64 userId = clients_.value(socket).userId;
     if (type == "user.getProfile")
         sendDbResult(socket, request, "user.getProfile.result", database_->getProfile(userId));
@@ -408,11 +416,14 @@ void ServerWorker::handleAdminCommand(quint64 requestId, const QString &action, 
     else if (action == "users.list")
         result = database_->adminUsers(data.value("phoneFilter").toString());
     else if (action == "orders.list")
-        result = database_->adminOrders();
+        result = database_->adminOrders(data.value("statusFilter").toString());
     else if (action == "station.add")
         result = database_->adminAddStation(data);
     else if (action == "user.setStatus")
         result = database_->adminSetUserStatus(static_cast<qint64>(data.value("userId").toDouble()), data.value("status").toString());
+    else if (action == "charger.reportFault")
+        result = database_->adminReportChargerFault(
+            static_cast<qint64>(data.value("chargerId").toDouble()));
     else if (action == "charger.restart") {
         const qint64 chargerId = static_cast<qint64>(data.value("chargerId").toDouble());
         result = database_->adminRestartCharger(chargerId);
@@ -430,7 +441,7 @@ void ServerWorker::handleAdminCommand(quint64 requestId, const QString &action, 
         result = {false, "REQUEST_INVALID", "未知管理操作", {}};
 
     if (result.ok) {
-        if (action == "station.add" || action == "charger.restart")
+        if (action == "station.add" || action == "charger.reportFault" || action == "charger.restart")
             broadcastStationsChanged();
         else if (action == "user.setStatus")
             broadcastUserStatus(static_cast<qint64>(data.value("userId").toDouble()),
