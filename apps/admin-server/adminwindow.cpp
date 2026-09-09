@@ -443,7 +443,6 @@ void AdminWindow::updateDashboard(const QJsonObject &data)
         {"离线/重启中", offline + restarting}};
 
     auto *statusSeries = new QPieSeries;
-    statusSeries->setHoleSize(0.38);
     const QStringList statusColors{"#3b82f6", "#35b66b", "#ff5d52", "#858585"};
     for (int i = 0; i < statusRows.size(); ++i) {
         const auto &entry = statusRows.at(i);
